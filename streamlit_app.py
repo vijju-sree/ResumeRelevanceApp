@@ -4,7 +4,12 @@ import re
 
 st.title("Resume Relevance App")
 
+# Keywords to identify a resume
+resume_keywords = ["experience", "education", "skills", "technologies", "projects", "certifications"]
+
+# Upload PDF
 uploaded_file = st.file_uploader("Upload your PDF resume", type="pdf")
+
 if uploaded_file:
     text = ""
     with pdfplumber.open(uploaded_file) as pdf:
@@ -12,16 +17,15 @@ if uploaded_file:
             page_text = page.extract_text()
             if page_text:
                 text += page_text + "\n"
-
-    # Simple resume validation
-    resume_keywords = ["education", "experience", "skills", "projects", "certification"]
-    if not any(word in text.lower() for word in resume_keywords):
-        st.error("❌ This does not look like a resume. Please upload a valid resume PDF.")
-    else:
-        # Job Descriptions
+    
+    # Check if it is likely a resume
+    text_lower = text.lower()
+    if any(keyword.lower() in text_lower for keyword in resume_keywords):
+        
+        # Job Descriptions (example)
         jd1 = "Axion Ray’s mission is..."
         jd2 = "Detailed Job Descriptions for Walk-In Drive..."
-
+        
         # Relevance calculation
         def calc_relevance(resume, jd):
             resume_words = set(re.findall(r'\b\w+\b', resume.lower()))
@@ -34,3 +38,6 @@ if uploaded_file:
 
         st.write(f"Relevance for JD1: {score1}%")
         st.write(f"Relevance for JD2: {score2}%")
+        
+    else:
+        st.warning("The uploaded file does not appear to be a valid resume. Please upload a proper resume PDF.")
