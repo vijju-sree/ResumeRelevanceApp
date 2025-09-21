@@ -14,7 +14,7 @@ if uploaded_file:
             if page_text:
                 text += page_text + "\n"
 
-    # Define JD(s)
+    # Define Job Descriptions
     jd1 = "Axion Ray’s mission is to hire skilled Python developers with experience in web frameworks, data analysis, and cloud technologies."
     jd2 = "Looking for candidates with certifications, projects, and experience in Machine Learning, Python, and deployment."
 
@@ -26,15 +26,16 @@ if uploaded_file:
     if not any(word in text_lower for word in resume_keywords):
         st.error("This does not appear to be a resume. Please upload a valid resume PDF.")
     else:
-        # Relevance calculation
+        # Relevance calculation function
         def calc_relevance(resume, jd):
             resume_words = set(re.findall(r'\b\w+\b', resume.lower()))
             jd_words = set(re.findall(r'\b\w+\b', jd.lower()))
             matched = resume_words.intersection(jd_words)
             missing = jd_words - resume_words
-            score = round(len(matched) / len(dj_words) * 100, 2) if jd_words else 0
+            score = round(len(matched) / len(jd_words) * 100, 2) if jd_words else 0
             return score, missing
 
+        # Calculate for each JD
         score1, missing1 = calc_relevance(text, jd1)
         score2, missing2 = calc_relevance(text, jd2)
 
