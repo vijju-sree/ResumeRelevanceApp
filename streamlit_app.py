@@ -1,46 +1,48 @@
 import streamlit as st
-import pdfplumber
-import re
+import PyPDF2
 
-st.title("Resume Relevance App")
+# Define JD keywords for comparison (example)
+jd1 = {
+    "skills": ["Python", "SQL", "Machine Learning", "Leadership"],
+    "certifications": ["AWS Certified", "PMP"],
+    "technologies": ["Docker", "Kubernetes"]
+}
 
-# Upload PDF
-uploaded_file = st.file_uploader("Upload your PDF resume", type="pdf")
-if uploaded_file:
+def extract_text_from_pdf(pdf_file):
+    pdf_reader = PyPDF2.PdfReader(pdf_file)
     text = ""
-    with pdfplumber.open(uploaded_file) as pdf:
-        for page in pdf.pages:
-            page_text = page.extract_text()
-            if page_text:
-                text += page_text + "\n"
+    for page in pdf_reader.pages:
+        text += page.extract_text()
+    return text.lower()
 
-    # Define Job Descriptions
-    jd1 = "Axion Ray’s mission is to hire skilled Python developers with experience in web frameworks, data analysis, and cloud technologies."
-    jd2 = "Looking for candidates with certifications, projects, and experience in Machine Learning, Python, and deployment."
+# Check if uploaded PDF is actually a resume
+def is_resume(text):
+    resume_keywords = ["experience", "skills", "projects", "education", "certifications", "technologies"]
+    return any(word in text for word in resume_keywords)
 
-    # Define resume keywords to validate
-    resume_keywords = ['experience', 'skills', 'technologies', 'certifications', 'education', 'projects', 'achievements']
+# Compare resume against JD and return missing items
+def get_missing_qualifications(resume_text, jd_keywords):
+    missing = {}
+    for category, items in jd_keywords.items():
+        missing_items = [item for item in items if item.lower() not in resume_text]
+        if missing_items:
+            missing[category] = missing_items
+    return missing
 
-    # Check if PDF is a resume
-    text_lower = text.lower()
-    if not any(word in text_lower for word in resume_keywords):
-        st.error("This does not appear to be a resume. Please upload a valid resume PDF.")
+st.title("Resume Relevance Checker")
+
+uploaded_file = st.file_uploader("Upload your PDF Resume", type="pdf")
+
+if uploaded_file:
+    resume_text = extract_text_from_pdf(uploaded_file)
+    
+    if not is_resume(resume_text):
+        st.warning("Uploaded file does not appear to be a resume.")
     else:
-        # Relevance calculation function
-        def calc_relevance(resume, jd):
-            resume_words = set(re.findall(r'\b\w+\b', resume.lower()))
-            jd_words = set(re.findall(r'\b\w+\b', jd.lower()))
-            matched = resume_words.intersection(jd_words)
-            missing = jd_words - resume_words
-            score = round(len(matched) / len(jd_words) * 100, 2) if jd_words else 0
-            return score, missing
-
-        # Calculate for each JD
-        score1, missing1 = calc_relevance(text, jd1)
-        score2, missing2 = calc_relevance(text, jd2)
-
-        st.write(f"**Relevance for JD1:** {score1}%")
-        st.write(f"**Missing in Resume for JD1:** {', '.join(missing1) if missing1 else 'None'}")
-
-        st.write(f"**Relevance for JD2:** {score2}%")
-        st.write(f"**Missing in Resume for JD2:** {', '.join(missing2) if missing2 else 'None'}")
+        missing_items = get_missing_qualifications(resume_text, jd1)
+        if missing_items:
+            st.subheader("Missing Qualifications / Skills / Certificates:")
+            for category, items in missing_items.items():
+                st.write(f"**{category.capitalize()}:** {', '.join(items)}")
+        else:
+            st.success("Resume has all required qualifications!")
