@@ -4,7 +4,6 @@ import re
 
 st.title("Resume Relevance App")
 
-# Upload PDF
 uploaded_file = st.file_uploader("Upload your PDF resume", type="pdf")
 if uploaded_file:
     text = ""
@@ -14,19 +13,24 @@ if uploaded_file:
             if page_text:
                 text += page_text + "\n"
 
-    # Job Descriptions
-    jd1 = "Axion Ray’s mission is..."
-    jd2 = "Detailed Job Descriptions for Walk-In Drive..."
+    # Simple resume validation
+    resume_keywords = ["education", "experience", "skills", "projects", "certification"]
+    if not any(word in text.lower() for word in resume_keywords):
+        st.error("❌ This does not look like a resume. Please upload a valid resume PDF.")
+    else:
+        # Job Descriptions
+        jd1 = "Axion Ray’s mission is..."
+        jd2 = "Detailed Job Descriptions for Walk-In Drive..."
 
-    # Relevance calculation
-    def calc_relevance(resume, jd):
-        resume_words = set(re.findall(r'\b\w+\b', resume.lower()))
-        jd_words = set(re.findall(r'\b\w+\b', jd.lower()))
-        matched = resume_words.intersection(jd_words)
-        return round(len(matched)/len(jd_words)*100, 2) if jd_words else 0
+        # Relevance calculation
+        def calc_relevance(resume, jd):
+            resume_words = set(re.findall(r'\b\w+\b', resume.lower()))
+            jd_words = set(re.findall(r'\b\w+\b', jd.lower()))
+            matched = resume_words.intersection(jd_words)
+            return round(len(matched)/len(jd_words)*100, 2) if jd_words else 0
 
-    score1 = calc_relevance(text, jd1)
-    score2 = calc_relevance(text, jd2)
+        score1 = calc_relevance(text, jd1)
+        score2 = calc_relevance(text, jd2)
 
-    st.write(f"Relevance for JD1: {score1}%")
-    st.write(f"Relevance for JD2: {score2}%")
+        st.write(f"Relevance for JD1: {score1}%")
+        st.write(f"Relevance for JD2: {score2}%")
