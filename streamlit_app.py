@@ -4,9 +4,6 @@ import re
 
 st.title("Resume Relevance App")
 
-# Resume validation keywords
-resume_keywords = ["experience", "skills", "education", "projects", "certifications", "technologies"]
-
 # Upload PDF
 uploaded_file = st.file_uploader("Upload your PDF resume", type="pdf")
 if uploaded_file:
@@ -17,28 +14,32 @@ if uploaded_file:
             if page_text:
                 text += page_text + "\n"
 
-    # Function to check if PDF is a resume
-    def is_resume(text):
-        text_lower = text.lower()
-        matches = [word for word in resume_keywords if word in text_lower]
-        return len(matches) > 0
+    # Define JD(s)
+    jd1 = "Axion Ray’s mission is to hire skilled Python developers with experience in web frameworks, data analysis, and cloud technologies."
+    jd2 = "Looking for candidates with certifications, projects, and experience in Machine Learning, Python, and deployment."
 
-    # Job Descriptions
-    jd1 = "Axion Ray’s mission is to develop innovative software solutions..."
-    jd2 = "Detailed Job Descriptions for Walk-In Drive includes Python, Flask, and team collaboration..."
+    # Define resume keywords to validate
+    resume_keywords = ['experience', 'skills', 'technologies', 'certifications', 'education', 'projects', 'achievements']
 
-    # Relevance calculation function
-    def calc_relevance(resume, jd):
-        resume_words = set(re.findall(r'\b\w+\b', resume.lower()))
-        jd_words = set(re.findall(r'\b\w+\b', jd.lower()))
-        matched = resume_words.intersection(jd_words)
-        return round(len(matched) / len(jd_words) * 100, 2) if jd_words else 0
-
-    # Only calculate relevance if PDF seems like a resume
-    if is_resume(text):
-        score1 = calc_relevance(text, jd1)
-        score2 = calc_relevance(text, jd2)
-        st.write(f"Relevance for JD1: {score1}%")
-        st.write(f"Relevance for JD2: {score2}%")
+    # Check if PDF is a resume
+    text_lower = text.lower()
+    if not any(word in text_lower for word in resume_keywords):
+        st.error("This does not appear to be a resume. Please upload a valid resume PDF.")
     else:
-        st.warning("Uploaded PDF does not appear to be a resume. Relevance cannot be calculated.")
+        # Relevance calculation
+        def calc_relevance(resume, jd):
+            resume_words = set(re.findall(r'\b\w+\b', resume.lower()))
+            jd_words = set(re.findall(r'\b\w+\b', jd.lower()))
+            matched = resume_words.intersection(jd_words)
+            missing = jd_words - resume_words
+            score = round(len(matched) / len(dj_words) * 100, 2) if jd_words else 0
+            return score, missing
+
+        score1, missing1 = calc_relevance(text, jd1)
+        score2, missing2 = calc_relevance(text, jd2)
+
+        st.write(f"**Relevance for JD1:** {score1}%")
+        st.write(f"**Missing in Resume for JD1:** {', '.join(missing1) if missing1 else 'None'}")
+
+        st.write(f"**Relevance for JD2:** {score2}%")
+        st.write(f"**Missing in Resume for JD2:** {', '.join(missing2) if missing2 else 'None'}")
