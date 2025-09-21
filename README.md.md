@@ -3,6 +3,7 @@
 ## Problem Statement
 This app calculates how relevant a candidate's resume is compared to fixed Job Descriptions (JDs) in PDF format. It helps recruiters and candidates quickly understand the match between resumes and job requirements.
 
+
 ## Technologies Used
 - Python
 - Flask
