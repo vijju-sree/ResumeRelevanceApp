@@ -1,48 +1,84 @@
 import streamlit as st
 import PyPDF2
+import docx2txt
 
-# Define JD keywords for comparison (example)
-jd1 = {
-    "skills": ["Python", "SQL", "Machine Learning", "Leadership"],
-    "certifications": ["AWS Certified", "PMP"],
-    "technologies": ["Docker", "Kubernetes"]
-}
+# ---------- Resume Keywords ----------
+RESUME_KEYWORDS = [
+    "experience", "skills", "certifications", "education", "technologies",
+    "projects", "leadership", "achievements"
+]
 
-def extract_text_from_pdf(pdf_file):
-    pdf_reader = PyPDF2.PdfReader(pdf_file)
-    text = ""
-    for page in pdf_reader.pages:
-        text += page.extract_text()
-    return text.lower()
+# ---------- Hard-coded example for demo ----------
+# In production, JD will be uploaded
+JD_LIST = []
 
-# Check if uploaded PDF is actually a resume
-def is_resume(text):
-    resume_keywords = ["experience", "skills", "projects", "education", "certifications", "technologies"]
-    return any(word in text for word in resume_keywords)
-
-# Compare resume against JD and return missing items
-def get_missing_qualifications(resume_text, jd_keywords):
-    missing = {}
-    for category, items in jd_keywords.items():
-        missing_items = [item for item in items if item.lower() not in resume_text]
-        if missing_items:
-            missing[category] = missing_items
-    return missing
-
-st.title("Resume Relevance Checker")
-
-uploaded_file = st.file_uploader("Upload your PDF Resume", type="pdf")
-
-if uploaded_file:
-    resume_text = extract_text_from_pdf(uploaded_file)
-    
-    if not is_resume(resume_text):
-        st.warning("Uploaded file does not appear to be a resume.")
+def parse_resume(file):
+    if file.type == "application/pdf":
+        reader = PyPDF2.PdfReader(file)
+        text = ""
+        for page in reader.pages:
+            page_text = page.extract_text()
+            if page_text:
+                text += page_text
+        return text
+    elif file.type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+        text = docx2txt.process(file)
+        return text
     else:
-        missing_items = get_missing_qualifications(resume_text, jd1)
-        if missing_items:
-            st.subheader("Missing Qualifications / Skills / Certificates:")
-            for category, items in missing_items.items():
-                st.write(f"**{category.capitalize()}:** {', '.join(items)}")
-        else:
-            st.success("Resume has all required qualifications!")
+        return ""
+
+def is_resume(text):
+    text = text.lower()
+    return any(kw in text for kw in RESUME_KEYWORDS)
+
+def calc_relevance(resume_text, jd_text):
+    resume_words = set(resume_text.lower().split())
+    jd_words = set(jd_text.lower().split())
+    
+    matched = resume_words.intersection(jd_words)
+    missing = jd_words - resume_words
+    
+    score = round(len(matched) / len(jd_words) * 100, 2) if jd_words else 0
+    # Verdict based on score
+    if score >= 75:
+        verdict = "High"
+    elif score >= 50:
+        verdict = "Medium"
+    else:
+        verdict = "Low"
+    
+    return score, list(missing), verdict
+
+# ---------- Streamlit App ----------
+st.title("Placement Resume Relevance Checker")
+
+st.header("Step 1: Upload Job Descriptions (JD)")
+uploaded_jds = st.file_uploader("Upload JD PDFs or DOCX", type=["pdf", "docx"], accept_multiple_files=True)
+if uploaded_jds:
+    JD_LIST.clear()
+    for jd_file in uploaded_jds:
+        text = parse_resume(jd_file)
+        if text:
+            JD_LIST.append(text)
+    st.success(f"{len(JD_LIST)} JD(s) uploaded successfully!")
+
+st.header("Step 2: Upload Resume")
+resume_file = st.file_uploader("Upload your resume PDF/DOCX", type=["pdf", "docx"])
+
+if resume_file and JD_LIST:
+    resume_text = parse_resume(resume_file)
+    if is_resume(resume_text):
+        st.success("✅ This is a resume")
+        
+        for idx, jd_text in enumerate(JD_LIST):
+            st.subheader(f"JD {idx+1} Analysis")
+            score, missing, verdict = calc_relevance(resume_text, jd_text)
+            st.write(f"**Relevance Score:** {score}%")
+            st.write(f"**Missing Qualifications/Skills:** {missing if missing else 'None'}")
+            st.write(f"**Verdict:** {verdict}")
+            
+            # Suggestion
+            if missing:
+                st.info("Suggestion: Work on the missing skills/qualifications to improve relevance.")
+    else:
+        st.error("❌ This PDF/DOCX does not appear to be a resume")
