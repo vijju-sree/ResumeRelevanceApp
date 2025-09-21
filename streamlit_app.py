@@ -2,7 +2,10 @@ import streamlit as st
 import pdfplumber
 import re
 
-st.title("Resume Relevance App with Missing Qualification Report")
+st.title("Resume Relevance App")
+
+# Resume validation keywords
+resume_keywords = ["experience", "skills", "education", "projects", "certifications", "technologies"]
 
 # Upload PDF
 uploaded_file = st.file_uploader("Upload your PDF resume", type="pdf")
@@ -14,31 +17,28 @@ if uploaded_file:
             if page_text:
                 text += page_text + "\n"
 
-    # Job Descriptions
-    jd1 = "Experience in Python, Flask, SQL, teamwork, communication."
-    jd2 = "Knowledge of Machine Learning, pandas, data visualization, certifications."
+    # Function to check if PDF is a resume
+    def is_resume(text):
+        text_lower = text.lower()
+        matches = [word for word in resume_keywords if word in text_lower]
+        return len(matches) > 0
 
-    # Function to calculate relevance and missing keywords
-    def analyze_resume(resume, jd):
+    # Job Descriptions
+    jd1 = "Axion Ray’s mission is to develop innovative software solutions..."
+    jd2 = "Detailed Job Descriptions for Walk-In Drive includes Python, Flask, and team collaboration..."
+
+    # Relevance calculation function
+    def calc_relevance(resume, jd):
         resume_words = set(re.findall(r'\b\w+\b', resume.lower()))
         jd_words = set(re.findall(r'\b\w+\b', jd.lower()))
         matched = resume_words.intersection(jd_words)
-        relevance = round(len(matched)/len(jd_words)*100, 2) if jd_words else 0
-        missing = jd_words - matched
-        return relevance, missing
+        return round(len(matched) / len(jd_words) * 100, 2) if jd_words else 0
 
-    score1, missing1 = analyze_resume(text, jd1)
-    score2, missing2 = analyze_resume(text, jd2)
-
-    # Display results
-    st.write(f"**JD1 Relevance:** {score1}%")
-    if missing1:
-        st.write("**Missing from Resume (JD1):**", ", ".join(missing1))
+    # Only calculate relevance if PDF seems like a resume
+    if is_resume(text):
+        score1 = calc_relevance(text, jd1)
+        score2 = calc_relevance(text, jd2)
+        st.write(f"Relevance for JD1: {score1}%")
+        st.write(f"Relevance for JD2: {score2}%")
     else:
-        st.write("All JD1 requirements are present in the resume ✅")
-
-    st.write(f"**JD2 Relevance:** {score2}%")
-    if missing2:
-        st.write("**Missing from Resume (JD2):**", ", ".join(missing2))
-    else:
-        st.write("All JD2 requirements are present in the resume ✅")
+        st.warning("Uploaded PDF does not appear to be a resume. Relevance cannot be calculated.")
