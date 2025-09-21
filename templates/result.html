@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Relevance Result</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+
+</head>
+<body>
+    <h2>Resume Relevance Scores</h2>
+    <p>JD1 Match: {{ score_jd1 }}%</p>
+    <p>JD2 Match: {{ score_jd2 }}%</p>
+    <a href="/">Go Back</a>
+</body>
+</html>
